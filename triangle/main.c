@@ -1,6 +1,12 @@
-#include <SDL.h>
+#include <SDL2/SDL.h>
+
+#ifdef __EMSCRIPTEN__
 #include <GLES3/gl3.h> // Provides WebGL/GLES headers
 #include <emscripten.h>
+#else
+#include <glad/gl.h>
+#endif
+
 #include <stdio.h>
 
 const int SCREEN_WIDTH = 800;
@@ -8,13 +14,19 @@ const int SCREEN_HEIGHT = 600;
 
 SDL_Window* window = NULL;
 SDL_GLContext glContext = NULL;
+int running = 1;
 
 // OpenGL Buffer handles
 unsigned int VAO, VBO;
 unsigned int shaderProgram;
 
 // Vertex Shader Source (OpenGL ES 3.0 / WebGL 2)
-const char* vertexShaderSource = "#version 300 es\n"
+const char* vertexShaderSource = 
+    #ifdef __EMSCRIPTEN__
+    "#version 300 es\n"
+    #else
+    "#version 330 core\n"
+    #endif
     "layout (location = 0) in vec2 aPos;\n"
     "layout (location = 1) in vec3 aColor;\n"
     "out vec3 vertexColor;\n"
@@ -24,8 +36,13 @@ const char* vertexShaderSource = "#version 300 es\n"
     "}\0";
 
 // Fragment Shader Source
-const char* fragmentShaderSource = "#version 300 es\n"
+const char* fragmentShaderSource =
+    #ifdef __EMSCRIPTEN__
+    "#version 300 es\n"
     "precision mediump float;\n"
+    #else
+    "#version 330 core\n"
+    #endif
     "in vec3 vertexColor;\n"
     "out vec4 FragColor;\n"
     "void main() {\n"
@@ -97,7 +114,11 @@ void main_loop() {
     SDL_Event e;
     while (SDL_PollEvent(&e) != 0) {
         if (e.type == SDL_QUIT) {
+            #ifdef __EMSCRIPTEN__
             emscripten_cancel_main_loop();
+            #else
+            running = 0;
+            #endif
             cleanup();
             return;
         }
@@ -118,13 +139,19 @@ void main_loop() {
     SDL_GL_SwapWindow(window);
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char** argv) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) return 1;
 
+    #ifdef __EMSCRIPTEN__
     // Force SDL to request WebGL 2.0 context profiles
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    #else
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    #endif
 
     window = SDL_CreateWindow("SDL2 WebGL Triangle", 
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
@@ -135,13 +162,24 @@ int main(int argc, char* argv[]) {
 
         return 1;
     }
+    #ifndef __EMSCRIPTEN__
+    if (!gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress)) {
+        printf("Failed to load GLAD.");
+    }
+    #endif
 
     // Compile pipelines and populate buffers
     init_shaders();
     init_geometry();
 
+    #ifdef __EMSCRIPTEN__
     // Start browser context execution loop
     emscripten_set_main_loop(main_loop, 0, 1);
-
+    #else
+    while (running) {
+        main_loop();
+    }
+    #endif
+    printf("Ended successfully\n");
     return 0;
 }
