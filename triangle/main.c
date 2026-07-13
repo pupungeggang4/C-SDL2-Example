@@ -122,6 +122,11 @@ void main_loop() {
             cleanup();
             return;
         }
+        else if (e.type == SDL_MOUSEBUTTONDOWN) {
+            int mouseX = e.button.x;
+            int mouseY = e.button.y;
+            printf("(%d, %d)\n", mouseX, mouseY);
+        }
     }
 
     // Set Clear state (Dark Grey)
