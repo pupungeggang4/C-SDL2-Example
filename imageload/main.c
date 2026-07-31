@@ -79,10 +79,11 @@ int main(int argc, char* argv[]) {
     destRect.h = 300;
     destRect.x = (SCREEN_WIDTH - destRect.w) / 2;
     destRect.y = (SCREEN_HEIGHT - destRect.h) / 2;
+    printf("Start\n");
 
     // 0 FPS matches the monitor refresh rate via requestAnimationFrame.
     // The '1' argument simulates an infinite loop blocking further execution in main.
-    emscripten_set_main_loop(main_loop, 0, 1);
+    emscripten_set_main_loop(main_loop, 0, 0);
 
     return 0;
 }
