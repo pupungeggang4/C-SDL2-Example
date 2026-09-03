@@ -39,6 +39,8 @@ void initGame(GameVar* gameVar) {
         height = width * 3 / 4;
     }
     #endif
+
+    gameVar->lWidth = 800; gameVar->lHeight = 600;
     gameVar->window = SDL_CreateWindow("Clicker", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN);
     #ifdef __EMSCRIPTEN__
     gameVar->renderer = SDL_CreateRenderer(gameVar->window, -1, SDL_RENDERER_ACCELERATED);
@@ -49,13 +51,18 @@ void initGame(GameVar* gameVar) {
     loadAsset(gameVar);
 
     gameVar->running = 1;
+    #ifdef __EMSCRIPTEN__
+    char* path = "/save/save.txt";
+    #else
+    char* path = "save.txt";
+    #endif
 
-    FILE *f = fopen("/save/save.txt", "r");
+    FILE *f = fopen(path, "r");
     if (!f) {
-        FILE *temp = fopen("/save/save.txt", "w");
+        FILE *temp = fopen(path, "w");
         fprintf(temp, "0 1\n");
         fclose(temp);
-        FILE *temp2 = fopen("/save/save.txt", "r");
+        FILE *temp2 = fopen(path, "r");
         fscanf(temp2, "%d %d", &gameVar->score, &gameVar->level);
         fclose(temp);
     } else {
@@ -75,23 +82,28 @@ void initGame(GameVar* gameVar) {
 
 void loop(GameVar* gameVar) {
     SDL_Event e;
+    #ifdef __EMSCRIPTEN__
+    char* path = "/save/save.txt";
+    #else
+    char* path = "save.txt";
+    #endif
     while (SDL_PollEvent(&e) != 0) {
         if (e.type == SDL_QUIT) {
             gameVar->running = 0;
         } else if (e.type == SDL_MOUSEBUTTONUP) {
             SDL_Point pos = {e.button.x, e.button.y};
             if (SDL_PointInRect(&pos, &buttonReset)) {
-                FILE *temp = fopen("/save/save.txt", "w");
+                FILE *temp = fopen(path, "w");
                 fprintf(temp, "0 1\n");
                 fclose(temp);
-                FILE *temp2 = fopen("/save/save.txt", "r");
+                FILE *temp2 = fopen(path, "r");
                 fscanf(temp2, "%d %d", &gameVar->score, &gameVar->level);
                 fclose(temp);
                 #ifdef __EMSCRIPTEN__
                 syncDB();
                 #endif
             } else if (SDL_PointInRect(&pos, &buttonSave)) {
-                FILE *temp = fopen("/save/save.txt", "w");
+                FILE *temp = fopen(path, "w");
                 fprintf(temp, "%d %d\n", gameVar->score, gameVar->level);
                 fclose(temp);
                 #ifdef __EMSCRIPTEN__

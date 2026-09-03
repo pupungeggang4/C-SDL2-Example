@@ -3,6 +3,7 @@
 #include "game.h"
 #include "util.h"
 
+#ifdef __EMSCRIPTEN__
 void loopGame() {
     loop(&gameVar);
 }
@@ -12,6 +13,7 @@ void startGame() {
     initGame(&gameVar);
     emscripten_set_main_loop(loopGame, 0, 1);
 }
+#endif
 
 int main(int argc, char** argv) {
     #ifdef __EMSCRIPTEN__
