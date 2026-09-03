@@ -5,7 +5,7 @@
 
 int main(int argc, char** argv) {
     #ifdef __EMSCRIPTEN__
-    initDB();
+    init();
     #else
     initGame(&gameVar);
     while(gameVar.running) {

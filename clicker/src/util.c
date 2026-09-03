@@ -3,7 +3,7 @@
 #include "game.h"
 
 #ifdef __EMSCRIPTEN__
-void initDB() {
+void init() {
     EM_ASM({
         try { FS.mkdir('/save'); } catch(e) {}
         FS.mount(FS.filesystems.IDBFS, {}, '/save');

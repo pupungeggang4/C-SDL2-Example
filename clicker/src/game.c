@@ -40,7 +40,11 @@ void initGame(GameVar* gameVar) {
     }
     #endif
     gameVar->window = SDL_CreateWindow("Clicker", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN);
+    #ifdef __EMSCRIPTEN__
+    gameVar->renderer = SDL_CreateRenderer(gameVar->window, -1, SDL_RENDERER_ACCELERATED);
+    #else
     gameVar->renderer = SDL_CreateRenderer(gameVar->window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    #endif
     SDL_RenderSetLogicalSize(gameVar->renderer, gameVar->lWidth, gameVar->lHeight);
     loadAsset(gameVar);
 
@@ -56,8 +60,8 @@ void initGame(GameVar* gameVar) {
         fclose(temp);
     } else {
         fscanf(f, "%d %d", &gameVar->score, &gameVar->level);
+        fclose(f);
     }
-    fclose(f);
 
     FILE *data = fopen("asset/data.txt", "r");
     for (int i = 0; i < 10; i++) {
