@@ -1,5 +1,6 @@
 #include "util.h"
 #include "gamevar.h"
+#include "game.h"
 
 #ifdef __EMSCRIPTEN__
 void initDB() {
@@ -7,15 +8,35 @@ void initDB() {
         try { FS.mkdir('/save'); } catch(e) {}
         FS.mount(FS.filesystems.IDBFS, {}, '/save');
         console.log("IDBFS 마운트 완료");
+        FS.syncfs(true, function(err) {
+            if (err) console.log(err);
+            else console.log("Load complete!");
+            _startGame();
+        });
     });
 }
 
-EM_ASYNC_JS(void, syncDB, (int to_memfs), {
-    await new Promise((resolve) => {
-        FS.syncfs(to_memfs, (err) => {
-            if (err) console.error("동기화 에러:", err);
-            resolve();
+void syncDB() {
+    EM_ASM({
+        if (window.isSaving) return;
+        window.isSaving = true;
+        console.log("Saving... do not close the tab.");
+
+        FS.syncfs(false, function(err) {
+            window.isSaving = false;
+            if (err) console.log(err);
+            else console.log("Save complete!");
         });
     });
-});
+}
+
+EMSCRIPTEN_KEEPALIVE
+void startGame() {
+    initGame(&gameVar);
+    emscripten_set_main_loop(loopGame, 0, 1);
+}
+
+void loopGame() {
+    loop(&gameVar);
+}
 #endif

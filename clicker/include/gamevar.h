@@ -8,9 +8,9 @@ typedef struct GameVar {
 
     int running;
     int score;
-    int scoreClick;
+    int scoreClick[10];
     int level;
-    int upgradeCost;
+    int upgradeCost[10];
 } GameVar;
 
 extern GameVar gameVar;
