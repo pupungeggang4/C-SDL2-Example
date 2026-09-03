@@ -1,5 +1,6 @@
 #include "game.h"
 #include "asset.h"
+#include "util.h"
 
 void initGame(GameVar* gameVar) {
     // Init SDL2.
@@ -41,11 +42,9 @@ void initGame(GameVar* gameVar) {
     gameVar->window = SDL_CreateWindow("Clicker", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN);
     gameVar->renderer = SDL_CreateRenderer(gameVar->window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     SDL_RenderSetLogicalSize(gameVar->renderer, gameVar->lWidth, gameVar->lHeight);
-    gameVar->running = 1;
+    loadAsset(gameVar);
 
-    gameVar->buttonUpgrade = (SDL_Rect){20, 500, 160, 80};
-    gameVar->buttonReset = (SDL_Rect){620, 500, 160, 80};
-    gameVar->buttonSave = (SDL_Rect){620, 20, 160, 80};
+    gameVar->running = 1;
 
     FILE *f = fopen("save/save.txt", "r");
     if (!f) {
@@ -66,10 +65,29 @@ void loop(GameVar* gameVar) {
     while (SDL_PollEvent(&e) != 0) {
         if (e.type == SDL_QUIT) {
             gameVar->running = 0;
-        } else if (e.type == SDL_MOUSEBUTTONDOWN) {
+        } else if (e.type == SDL_MOUSEBUTTONUP) {
             SDL_Point pos = {e.button.x, e.button.y};
-            //printf("%d, %d\n", pos.x, pos.y);
-            printf("%d\n", gameVar->scoreClick);
+            if (SDL_PointInRect(&pos, &buttonReset)) {
+                FILE *temp = fopen("save/save.txt", "w");
+                fprintf(temp, "0 1 1 5\n");
+                fclose(temp);
+                FILE *temp2 = fopen("save/save.txt", "r");
+                fscanf(temp2, "%d %d %d %d", &gameVar->score, &gameVar->scoreClick, &gameVar->level, &gameVar->upgradeCost);
+                fclose(temp);
+                #ifdef __EMSCRIPTEN__
+                syncDB(0);
+                #endif
+            } else if (SDL_PointInRect(&pos, &buttonSave)) {
+                FILE *temp = fopen("save/save.txt", "w");
+                fprintf(temp, "%d %d %d %d\n", gameVar->score, gameVar->scoreClick, gameVar->level, gameVar->upgradeCost);
+                fclose(temp);
+                #ifdef __EMSCRIPTEN__
+                syncDB(0);
+                #endif
+            } else {
+                gameVar->score += gameVar->scoreClick;
+            }
+            printf("%d %d %d %d\n", gameVar->score, gameVar->scoreClick, gameVar->level, gameVar->upgradeCost);
         }
     }
 
@@ -86,17 +104,35 @@ void loop(GameVar* gameVar) {
 }
 
 void render(GameVar* gameVar) {
-    SDL_SetRenderDrawColor(gameVar->renderer, 0, 255, 127, 255);
-    SDL_RenderFillRect(gameVar->renderer, &gameVar->buttonUpgrade);
-    SDL_SetRenderDrawColor(gameVar->renderer, 255, 0, 0, 255);
-    SDL_RenderFillRect(gameVar->renderer, &gameVar->buttonReset);
-    SDL_SetRenderDrawColor(gameVar->renderer, 0, 255, 255, 255);
-    SDL_RenderFillRect(gameVar->renderer, &gameVar->buttonSave);
+    SDL_SetRenderDrawColor(gameVar->renderer, 0, 255, 0, 255);
+    SDL_RenderFillRect(gameVar->renderer, &buttonUpgrade);
+    SDL_SetRenderDrawColor(gameVar->renderer, 255, 127, 127, 255);
+    SDL_RenderFillRect(gameVar->renderer, &buttonReset);
+    SDL_RenderCopy(gameVar->renderer, labelReset, NULL, &rLabelReset);
+    SDL_SetRenderDrawColor(gameVar->renderer, 255, 0, 255, 255);
+    SDL_RenderFillRect(gameVar->renderer, &buttonSave);
 }
 
 void loadAsset(GameVar* gameVar) {
-    
+    font = TTF_OpenFont("asset/neodgm.ttf", 32);
+    SDL_Color textColor = {0, 0, 0, 255};
+
+    SDL_Surface* sLabelReset = TTF_RenderText_Blended(font, "Reset", textColor);
+    labelReset = SDL_CreateTextureFromSurface(gameVar->renderer, sLabelReset);
+    rLabelReset.w = sLabelReset->w;
+    rLabelReset.h = sLabelReset->h;
+    SDL_FreeSurface(sLabelReset);
+
+    for (int i = 0; i < 10; i++) {
+        char text[2];
+        snprintf(text, sizeof(text), "%d", i);
+        SDL_Surface* temp = TTF_RenderText_Blended(font, text, textColor);
+        tnum[i] = SDL_CreateTextureFromSurface(gameVar->renderer, temp);
+        SDL_FreeSurface(temp);
+    }
 }
 
 void disposeAsset(GameVar* gameVar) {
+    SDL_DestroyRenderer(gameVar->renderer);
+    SDL_DestroyWindow(gameVar->window);
 }
