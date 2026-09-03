@@ -1,7 +1,9 @@
 #include "includes.h"
 #include "gamevar.h"
+#include "game.h"
 
 GameVar gameVar = {0};
+
 #ifdef __EMSCRIPTEN__
 void initDB() {
     EM_ASM({
@@ -21,7 +23,7 @@ EM_ASYNC_JS(void, syncDB, (bool to_memfs), {
 });
 
 void loopGame() {
-    //loop(gameVar);
+    loop(&gameVar);
 }
 #endif
 
@@ -29,9 +31,13 @@ int main(int argc, char** argv) {
     #ifdef __EMSCRIPTEN__
     initDB();
     syncDB(true);
+    initGame(&gameVar);
     emscripten_set_main_loop(loopGame, 0, 1);
     #else
-
+    initGame(&gameVar);
+    while(gameVar.running) {
+        loop(&gameVar);
+    }
     #endif
     return 0;
 }
