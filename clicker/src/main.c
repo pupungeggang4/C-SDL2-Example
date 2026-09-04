@@ -20,10 +20,10 @@ int main(int argc, char** argv) {
     EM_ASM({
         try { FS.mkdir('/save'); } catch(e) {}
         FS.mount(FS.filesystems.IDBFS, {}, '/save');
-        console.log("IDBFS 마운트 완료");
+        Module.print("IDBFS 마운트 완료");
         FS.syncfs(true, function(err) {
-            if (err) console.log(err);
-            else console.log("Load complete!");
+            if (err) Module.print(err);
+            else Module.print("Load complete!");
             _startGame();
         });
     });
